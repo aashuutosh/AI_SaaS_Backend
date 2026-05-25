@@ -1,8 +1,16 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from loguru import logger
-from app.routes import ai, auth, users, admin
+
+# Import all functional routers
+from app.routes import auth, ai, users, admin
+
+# Initialize the Limiter using the client's IP address
+limiter = Limiter(key_func=get_remote_address)
 
 def create_app() -> FastAPI:
     """
@@ -15,7 +23,11 @@ def create_app() -> FastAPI:
         openapi_url="/v1/openapi.json"
     )
 
-    # Security: Strict CORS Configuration
+    # 1. Register the SlowAPI Rate Limiter to the application state
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+    # 2. Security: Strict CORS Configuration
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["https://app.aiflow-platform.com"], # Strict production domain
@@ -24,7 +36,7 @@ def create_app() -> FastAPI:
         allow_headers=["Authorization", "Content-Type"],
     )
 
-    # Route Registration
+    # 3. Route Registration
     app.include_router(auth.router)
     app.include_router(users.router)
     app.include_router(ai.router)
@@ -32,8 +44,10 @@ def create_app() -> FastAPI:
 
     return app
 
+# Instantiate the application
 app = create_app()
 
+# 4. Global Exception Handler
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """
