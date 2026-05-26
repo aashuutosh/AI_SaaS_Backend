@@ -10,10 +10,14 @@ settings = get_settings()
 genai.configure(api_key=settings.GEMINI_API_KEY)
 
 # Cost mappings based on architectural requirements
-COST_MATRIX = {
+# Inside app/services/ai_service.py
+
+# Map your frontend tool names to their exact credit costs
+TOOL_COSTS = {
     "chat": 1,
-    "image": 5,
-    "long_content": 10
+    "short_content": 5,
+    "image_generation": 5,
+    "long_form_content": 10
 }
 
 async def generate_and_charge(db: AsyncSession, user: User, prompt: str, tool_name: str) -> str:
@@ -21,7 +25,7 @@ async def generate_and_charge(db: AsyncSession, user: User, prompt: str, tool_na
     Executes an atomic transaction that verifies credits, calls the Gemini API, 
     deducts balance, and logs usage. Rolls back entirely on failure.
     """
-    cost = COST_MATRIX.get(tool_name, 1)
+    cost = TOOL_COSTS.get(tool_name, 1)
     
     # 1. Immediate Credit Check
     if user.credits < cost:

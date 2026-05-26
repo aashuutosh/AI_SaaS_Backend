@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from pydantic import BaseModel
+
 from app.database.session import get_db
 from app.models.base import User, Role
 from app.auth.jwt import create_access_token, create_refresh_token, decode_token
@@ -27,7 +28,7 @@ class RefreshRequest(BaseModel):
 async def google_oauth_exchange(request: GoogleAuthRequest, db: AsyncSession = Depends(get_db)):
     """
     Exchanges Google User Data for our platform's internal JWTs.
-    If the user does not exist, they are automatically registered.
+    If the user does not exist, they are automatically registered to the Free Tier.
     """
     # 1. Check if user exists
     result = await db.execute(select(User).where(User.email == request.email))
@@ -35,14 +36,24 @@ async def google_oauth_exchange(request: GoogleAuthRequest, db: AsyncSession = D
 
     # 2. Register new user if they don't exist
     if not user:
-        # Fetch default role (Basic User) - Assuming Role ID 1 exists
-        # We will create a script to seed roles later. For now, hardcode fallback to 1.
+        # Dynamically fetch the "free" role from the database
+        role_result = await db.execute(select(Role).where(Role.name == "free"))
+        free_role = role_result.scalars().first()
+
+        # Safety catch in case the database hasn't been seeded yet
+        if not free_role:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="System configuration error: Default 'free' role not found. Please run the database seeder."
+            )
+
+        # Create user with exact UI terms
         user = User(
             email=request.email,
             name=request.name,
             profile_image=request.profile_image,
-            role_id=1, 
-            credits=50 # Starter credits
+            role_id=free_role.id, 
+            credits=500  # Matched to Frontend "Monthly free allocation"
         )
         db.add(user)
         await db.commit()
