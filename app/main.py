@@ -38,13 +38,19 @@ def create_app() -> FastAPI:
 
     # 4. Security: CORS Configuration 
     # (Set to "*" for your local screen recording demo so it doesn't block you)
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"], 
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+   origins = [
+    "http://localhost:5173", 
+    "https://magical-bombolone-f9fbf8.netlify.app/"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+    
 
     # 5. Auto-Redirect to the Beautiful UI
     @app.get("/", include_in_schema=False)
