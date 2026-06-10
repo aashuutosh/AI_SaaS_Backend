@@ -45,7 +45,7 @@ origins = [
     "http://localhost:5173",          # Local frontend port
     "http://localhost:3000",
     "https://6a29d4d5b7cbf6a61dc873d2--magical-bombolone-f9fbf8.netlify.app/", 
-    "https://8578ec52.ai-saas-frontend-7ej.pages.dev/",    
+    "https://8578ec52.ai-saas-frontend-7ej.pages.dev",    
 ]
 
 app.add_middleware(
