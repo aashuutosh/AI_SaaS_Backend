@@ -36,19 +36,25 @@ def create_app() -> FastAPI:
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# 4. Security: CORS Configuration 
-    origins = [
-        "http://localhost:5173", 
-        "https://magical-bombolone-f9fbf8.netlify.app" # <-- REMOVED the trailing slash here!
-    ]
+from fastapi.middleware.cors import CORSMiddleware
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+app = FastAPI()
+
+# Add your brand new Cloudflare Pages URL to this list!
+origins = [
+    "http://localhost:5173",          # Local frontend port
+    "http://localhost:3000",
+    "https://6a29d4d5b7cbf6a61dc873d2--magical-bombolone-f9fbf8.netlify.app/", 
+    "https://8578ec52.ai-saas-frontend-7ej.pages.dev/",    
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,            # Allows these specific domains to connect
+    allow_credentials=True,
+    allow_methods=["*"],              # Allows GET, POST, DELETE, etc.
+    allow_headers=["*"],              # Allows all headers
+)
     
 
     # 5. Auto-Redirect to the Beautiful UI
